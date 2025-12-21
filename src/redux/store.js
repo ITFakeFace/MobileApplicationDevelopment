@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import Reducer (Chú ý đường dẫn phải đúng file AuthSlice của bạn)
 import authReducer from './slices/AuthSlice'; 
+import configReducer from './slices/ConfigSlice';
 
 // 1. Cấu hình Persist
 const persistConfig = {
@@ -21,7 +22,7 @@ const persistConfig = {
   version: 1,
   // QUAN TRỌNG: Chỉ lưu 'auth' vào ổ cứng. 
   // Nếu có các state khác (như modal, loading tạm thời) thì không nên lưu.
-  whitelist: ['auth'], 
+  whitelist: ['auth','config'], 
   // blacklist: ['something_else'] // Ngược lại với whitelist
 };
 
@@ -29,6 +30,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   auth: authReducer,
   // Thêm các reducer khác nếu có: product: productReducer...
+  config: configReducer,
 });
 
 // 3. Tạo Persisted Reducer

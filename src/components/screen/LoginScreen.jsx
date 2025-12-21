@@ -8,13 +8,13 @@ import Animated, {
   withSequence,
   withTiming
 } from 'react-native-reanimated';
-
+import { FontAwesome } from '@expo/vector-icons';
 // --- 1. Import Redux ---
 import { useDispatch, useSelector } from 'react-redux';
 import { clearError, loginUser } from '../../redux/slices/AuthSlice';
 // Đảm bảo đường dẫn này đúng với file AuthSlice của bạn
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState(''); // Ở đây mình dùng biến này làm username luôn
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -125,7 +125,13 @@ export default function LoginScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 justify-center px-6 py-12">
+        <View className="flex-1 justify-center px-6 py-12 relative">
+          <TouchableOpacity
+            className="absolute top-12 right-6 z-50 p-2 bg-white/80 rounded-full shadow-sm"
+            onPress={() => navigation.navigate('SettingIpScreen')}
+          >
+            <FontAwesome name="cog" size={24} color="#4b5563" />
+          </TouchableOpacity>
           <Animated.View style={animatedShakeStyle}>
             
             {/* --- Header (Đã sửa lỗi hiển thị Text) --- */}

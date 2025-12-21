@@ -6,6 +6,9 @@ import MainRouter from "./src/components/router/MainRouter";
 import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "./src/redux/store";
 import { Provider } from "react-redux";
+import { injectStore } from "./src/api/APIClient";
+
+injectStore(store);
 
 export default function App() {
   return (
@@ -15,7 +18,7 @@ export default function App() {
         <SafeAreaProvider>
           <PaperProvider>
             <View className="flex-1">
-              <MainRouter />
+                <MainRouter />
             </View>
           </PaperProvider>
         </SafeAreaProvider>

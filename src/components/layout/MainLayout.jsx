@@ -1,9 +1,9 @@
 import { Text, View } from "react-native";
 
-const MainLayout = ()=>{
+const MainLayout = ({children})=>{
     return (
-        <View>
-            <Text>This is main layout</Text>
+        <View className="flex-1 mt-10">
+            {children}
         </View>
     )
 }

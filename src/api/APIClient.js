@@ -1,23 +1,45 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 1. Tạo instance
+// Mẹo: Import store kiểu này (có thể gây circular dependency warning nhưng thường vẫn chạy tốt nếu chỉ dùng trong hàm)
+// Nếu bị lỗi, ta sẽ dùng cách khác.
+let store; 
+
+// Hàm để inject store từ file App.js hoặc Store.js vào đây (tránh import trực tiếp gây lỗi vòng lặp)
+export const injectStore = (_store) => {
+  store = _store;
+};
+
+// 1. Tạo instance (Lúc này baseURL chỉ là tạm thời)
 const APIClient = axios.create({
-  baseURL: 'http://192.168.1.66:3000', // Thay bằng IP máy tính nếu chạy trên điện thoại thật (VD: 192.168.1.10:3000)
+  baseURL: 'http://localhost:3000', // Giá trị tạm, sẽ bị ghi đè ngay lập tức
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 10000,
 });
-
-// 2. Request Interceptor: Tự động gắn Token vào mọi request
+// 2. Request Interceptor: GẮN URL ĐỘNG + TOKEN
 APIClient.interceptors.request.use(
   async (config) => {
-    // Lấy token từ storage (hoặc từ Redux store nếu bạn muốn inject store vào đây)
+    // --- XỬ LÝ URL ĐỘNG TỪ REDUX ---
+    if (store) {
+      const state = store.getState();
+      const dynamicUrl = state.config.baseUrl; // Lấy URL từ Redux
+      
+      if (dynamicUrl) {
+        config.baseURL = dynamicUrl; // Ghi đè baseURL của axios
+      }
+    }
+
+    // --- XỬ LÝ TOKEN ---
     const token = await AsyncStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Log nhẹ để debug xem nó đang gọi vào IP nào
+    console.log(`Calling API: ${config.baseURL}${config.url}`);
+    
     return config;
   },
   (error) => Promise.reject(error)
