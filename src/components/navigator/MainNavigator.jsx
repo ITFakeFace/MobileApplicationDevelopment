@@ -9,6 +9,7 @@ import { useDispatch } from 'react-redux'; // Import hook dispatch
 // Import Action Logout và HomeScreen
 import HomeScreen from '../screen/HomeScreen';
 import { logout } from '../../redux/slices/AuthSlice';
+import UserOptionScreen from '../screen/UserOptionScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -20,18 +21,7 @@ export default function MainNavigator() {
 
   // Hàm xử lý đăng xuất
   const handleLogout = () => {
-    Alert.alert(
-      "Đăng xuất",
-      "Bạn có chắc chắn muốn đăng xuất không?",
-      [
-        { text: "Hủy", style: "cancel" },
-        { 
-          text: "Đồng ý", 
-          style: "destructive",
-          onPress: () => dispatch(logout()) // Gọi Redux Logout -> App tự chuyển về Login
-        }
-      ]
-    );
+    
   };
 
   return (
@@ -82,23 +72,13 @@ export default function MainNavigator() {
           ),
         }}
       />
-
-      {/* --- TAB 2: LOGOUT --- */}
       <Tab.Screen
-        name="Logout"
-        component={LogoutPlaceholder} // Component giả
-        listeners={{
-          tabPress: (e) => {
-            // QUAN TRỌNG: Chặn chuyển màn hình
-            e.preventDefault(); 
-            // Hiện popup xác nhận logout
-            handleLogout();
-          },
-        }}
+        name="UserOption"
+        component={UserOptionScreen}
         options={{
-          tabBarLabel: 'Đăng xuất',
+          tabBarLabel: 'User',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="logout" size={size} color={color} />
+            <MaterialCommunityIcons name="account" size={size} color={color} />
           ),
         }}
       />

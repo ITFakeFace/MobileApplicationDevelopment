@@ -10,6 +10,7 @@ import { useSelector } from 'react-redux';
 import MainNavigator from '../navigator/MainNavigator';
 import AuthNavigator from '../navigator/AuthNavigator';
 import SettingIpScreen from '../screen/SettingIpScreen';
+import ProfileScreen from '../screen/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -33,8 +34,14 @@ export default function MainRouter() {
         
         {/* --- PHẦN 1: LOGIC CHUYỂN ĐỔI AUTH / MAIN --- */}
         {isLoggedIn ? (
-          // Nếu đã đăng nhập -> Load MainNavigator
+          <>
           <Stack.Screen name="MainApp" component={MainNavigator} />
+          <Stack.Screen 
+            name="Profile" 
+            component={ProfileScreen} 
+            options={{ headerShown: true, title: 'Hồ sơ cá nhân' }} 
+          />
+          </>
         ) : (
           // Nếu chưa đăng nhập -> Load AuthNavigator
           <Stack.Screen name="AuthApp" component={AuthNavigator} />
