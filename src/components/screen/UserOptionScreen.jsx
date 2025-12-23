@@ -9,22 +9,20 @@ import { logout } from "../../redux/slices/AuthSlice";
 const UserOptionScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  const baseUrl = useSelector((state) => state.config?.baseUrl || "http://localhost:3000"); 
+  const { user, roles } = useSelector((state) => state.auth);
+  const baseUrl = useSelector(
+    (state) => state.config?.baseUrl || "http://localhost:3000"
+  );
 
   const handleLogout = () => {
-    Alert.alert(
-      "Đăng xuất",
-      "Bạn có chắc chắn muốn đăng xuất không?",
-      [
-        { text: "Hủy", style: "cancel" },
-        { 
-          text: "Đồng ý", 
-          style: "destructive",
-          onPress: () => dispatch(logout()) // Gọi Redux Logout -> App tự chuyển về Login
-        }
-      ]
-    );
+    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất không?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Đồng ý",
+        style: "destructive",
+        onPress: () => dispatch(logout()), // Gọi Redux Logout -> App tự chuyển về Login
+      },
+    ]);
   };
 
   const menuItems = [
@@ -33,10 +31,30 @@ const UserOptionScreen = () => {
       icon: "account",
       onPress: () => navigation.navigate("Profile"),
     },
+    
+  ];
+  const studentMenuItems = [
+    {
+      title: "Yêu cầu hỗ trợ",
+      icon: "account",
+      onPress: () => navigation.navigate("RequestForm"),
+    },
+  ];
+  const bottomMenuItems = [
+    {
+      title: "Thông tin liên lạc",
+      icon: "help-circle",
+      onPress: () => navigation.navigate("ContactUs"),
+    },
+    {
+      title: "Về chúng tôi",
+      icon: "help-circle",
+      onPress: () => navigation.navigate("AboutUs"),
+    },
     {
       title: "Cài đặt",
       icon: "cog",
-      onPress: () => navigation.navigate("SettingOptionScreen"),
+      onPress: () => navigation.navigate("SettingOption"),
     },
     {
       title: "Trợ giúp",
@@ -44,7 +62,46 @@ const UserOptionScreen = () => {
       onPress: () => navigation.navigate("Help"),
     },
   ];
+  const bottomMenuItemsTemplate = bottomMenuItems.map((item, index) => (
+    <React.Fragment key={index}>
+      <List.Item
+        title={item.title}
+        left={(props) => <List.Icon {...props} icon={item.icon} />}
+        right={(props) => <List.Icon {...props} icon="chevron-right" />}
+        onPress={item.onPress}
+        className="px-4"
+      />
+      {index < menuItems.length - 1 && <Divider />}
+    </React.Fragment>
+  ));
+
   console.log(`${baseUrl}${user.avatar}`);
+  const menuItemsTemplate = menuItems.map((item, index) => (
+    <React.Fragment key={index}>
+      <List.Item
+        title={item.title}
+        left={(props) => <List.Icon {...props} icon={item.icon} />}
+        right={(props) => <List.Icon {...props} icon="chevron-right" />}
+        onPress={item.onPress}
+        className="px-4"
+      />
+      {index < menuItems.length - 1 && <Divider />}
+    </React.Fragment>
+  ));
+
+  const studentMenuItemsTemplate = studentMenuItems.map((item, index) => (
+    <React.Fragment key={index}>
+      <List.Item
+        title={item.title}
+        left={(props) => <List.Icon {...props} icon={item.icon} />}
+        right={(props) => <List.Icon {...props} icon="chevron-right" />}
+        onPress={item.onPress}
+        className="px-4"
+      />
+      {index < menuItems.length - 1 && <Divider />}
+    </React.Fragment>
+  ));
+
   return (
     <MainLayout>
       <ScrollView className="flex-1 bg-gray-50">
@@ -55,7 +112,7 @@ const UserOptionScreen = () => {
         >
           {user?.avatar ? (
             <Image
-              source={{uri:`${baseUrl}${user.avatar}`}}
+              source={{ uri: `${baseUrl}${user.avatar}` }}
               className="w-16 h-16 rounded-full"
             />
           ) : (
@@ -78,18 +135,9 @@ const UserOptionScreen = () => {
 
         {/* Menu Items */}
         <View className="bg-white mt-2">
-          {menuItems.map((item, index) => (
-            <React.Fragment key={index}>
-              <List.Item
-                title={item.title}
-                left={(props) => <List.Icon {...props} icon={item.icon} />}
-                right={(props) => <List.Icon {...props} icon="chevron-right" />}
-                onPress={item.onPress}
-                className="px-4"
-              />
-              {index < menuItems.length - 1 && <Divider />}
-            </React.Fragment>
-          ))}
+          {menuItemsTemplate}
+          {roles.includes("STUDENT") && studentMenuItemsTemplate}
+          {bottomMenuItemsTemplate}
         </View>
 
         <Divider className="mt-2" />
