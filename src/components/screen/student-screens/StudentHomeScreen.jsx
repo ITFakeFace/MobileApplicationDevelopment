@@ -54,7 +54,6 @@ const StudentHomeScreen = () => {
       const toDate = moment().add(1, 'year').endOf('month').format('YYYY-MM-DD');
       
       // Gọi API dành riêng cho Teacher
-      console.log("Calling student schedule API for studentId:"+`/enrollments/schedule?studentId=${studentId}&fromDate=${fromDate}&toDate=${toDate}`);
       const response = await api.get(`/enrollments/schedule?studentId=${studentId}&fromDate=${fromDate}&toDate=${toDate}`);
 
       // Xử lý dữ liệu trả về an toàn
