@@ -33,6 +33,7 @@ const authSlice = createSlice({
     user: null, // Thông tin user (id, username, roles...)
     accessToken: null, // Token dùng để gọi API
     permissions: [], // Danh sách quyền
+    roles: [],
     isLoggedIn: false, // Trạng thái đăng nhập
     isLoading: false, // Để hiện loading spinner
     error: null, // Thông báo lỗi nếu có
@@ -43,6 +44,7 @@ const authSlice = createSlice({
       state.user = null;
       state.accessToken = null;
       state.permissions = [];
+      state.roles=[];
       state.isLoggedIn = false;
       state.error = null;
       AsyncStorage.clear(); // Xóa sạch storage
@@ -67,6 +69,7 @@ const authSlice = createSlice({
         state.accessToken = action.payload.accessToken;
         state.user = action.payload.user;
         state.permissions = action.payload.user.permissions;
+        state.roles = action.payload.user.roles;
       })
       // 3. Gọi thất bại
       .addCase(loginUser.rejected, (state, action) => {

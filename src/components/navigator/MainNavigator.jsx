@@ -4,10 +4,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BottomNavigation } from 'react-native-paper';
 import { CommonActions } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useDispatch } from 'react-redux'; // Import hook dispatch
+import { useDispatch, useSelector } from 'react-redux'; // Import hook dispatch
 
 // Import Action Logout và HomeScreen
-import HomeScreen from '../screen/HomeScreen';
+import StudentHomeScreen from '../screen/student-screens/StudentHomeScreen';
 import { logout } from '../../redux/slices/AuthSlice';
 import UserOptionScreen from '../screen/UserOptionScreen';
 
@@ -18,12 +18,7 @@ const LogoutPlaceholder = () => <View />;
 
 export default function MainNavigator() {
   const dispatch = useDispatch();
-
-  // Hàm xử lý đăng xuất
-  const handleLogout = () => {
-    
-  };
-
+  const { roles } = useSelector((state) => state.auth);
   return (
     <Tab.Navigator
       screenOptions={{ headerShown: false }}
@@ -62,16 +57,33 @@ export default function MainNavigator() {
       )}
     >
       {/* --- TAB 1: HOME --- */}
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: 'Trang chủ',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home" size={size} color={color} />
-          ),
-        }}
-      />
+      {roles.includes("STUDENT") && (
+        <Tab.Screen
+          name="StudentHome"
+          component={StudentHomeScreen}
+          options={{
+            tabBarLabel: 'Học tập',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="school" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
+
+      {/* CASE 2: NẾU CÓ ROLE TEACHER -> HIỆN TAB GIẢNG DẠY */}
+      {/* Nếu user có cả 2 role, cả 2 tab sẽ cùng hiện lên */}
+      {roles.includes("TEACHER") && (
+        <Tab.Screen
+          name="TeacherHome"
+          component={TeacherHomeScreen}
+          options={{
+            tabBarLabel: 'Giảng dạy',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="teach" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
       <Tab.Screen
         name="UserOption"
         component={UserOptionScreen}

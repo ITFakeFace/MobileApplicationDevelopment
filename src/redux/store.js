@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Import Reducer (Chú ý đường dẫn phải đúng file AuthSlice của bạn)
 import authReducer from './slices/AuthSlice'; 
 import configReducer from './slices/ConfigSlice';
+import dataConfigReducer from './slices/DataConfigSlice';
 
 // 1. Cấu hình Persist
 const persistConfig = {
@@ -31,6 +32,7 @@ const rootReducer = combineReducers({
   auth: authReducer,
   // Thêm các reducer khác nếu có: product: productReducer...
   config: configReducer,
+  dataConfig: dataConfigReducer,
 });
 
 // 3. Tạo Persisted Reducer
