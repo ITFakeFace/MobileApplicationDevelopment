@@ -33,7 +33,7 @@ const UserOptionScreen = () => {
     {
       title: "Cài đặt",
       icon: "cog",
-      onPress: () => navigation.navigate("SettingIpScreen"),
+      onPress: () => navigation.navigate("SettingOptionScreen"),
     },
     {
       title: "Trợ giúp",
