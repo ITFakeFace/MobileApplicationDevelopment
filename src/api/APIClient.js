@@ -60,11 +60,16 @@ APIClient.interceptors.response.use(
 );
 
 // 4. Các hàm helper (để bạn dùng cho gọn)
+// const api = {
+//   get: (url, params) => APIClient.get(url, { params }),
+//   post: (url, data) => APIClient.post(url, data),
+//   put: (url, data) => APIClient.put(url, data),
+//   delete: (url) => APIClient.delete(url),
+// };
 const api = {
-  get: (url, params) => APIClient.get(url, { params }),
-  post: (url, data) => APIClient.post(url, data),
-  put: (url, data) => APIClient.put(url, data),
-  delete: (url) => APIClient.delete(url),
+  get: (url, params, config) => APIClient.get(url, { params, ...config }),
+  post: (url, data, config) => APIClient.post(url, data, config),
+  put: (url, data, config) => APIClient.put(url, data, config),
+  delete: (url, config) => APIClient.delete(url, config),
 };
-
 export default api;

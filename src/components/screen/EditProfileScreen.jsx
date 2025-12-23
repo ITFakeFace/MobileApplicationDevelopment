@@ -19,6 +19,7 @@ import { useSelector, useDispatch } from "react-redux";
 import MainLayout from "../layout/MainLayout";
 import api from "../../api/APIClient";
 import * as ImagePicker from "expo-image-picker";
+import { updateUser } from "../../redux/slices/AuthSlice";
 
 const buildUpdateEndpoint = (userId) => `/users/${userId}`;
 
@@ -110,107 +111,115 @@ export default function EditProfileScreen() {
     };
   };
 
-  const onSave = async () => {
-    if (!userId) {
-      Alert.alert("Lỗi", "Không tìm thấy thông tin user.");
-      return;
-    }
+ const onSave = async () => {
+  if (!userId) {
+    Alert.alert("Lỗi", "Không tìm thấy thông tin user.");
+    return;
+  }
 
-    if (!fullname?.trim()) {
-      Alert.alert("Thiếu thông tin", "Vui lòng nhập họ và tên.");
-      return;
-    }
+  if (!fullname?.trim()) {
+    Alert.alert("Thiếu thông tin", "Vui lòng nhập họ và tên.");
+    return;
+  }
 
-    if (!isDobValid) {
-      Alert.alert("Sai định dạng", "Ngày sinh phải theo định dạng YYYY-MM-DD (vd: 1990-01-01).");
-      return;
-    }
+  if (!isDobValid) {
+    Alert.alert("Sai định dạng", "Ngày sinh phải theo định dạng YYYY-MM-DD (vd: 1990-01-01).");
+    return;
+  }
 
-    setSaving(true);
-    try {
-      const endpoint = buildUpdateEndpoint(userId);
+  setSaving(true);
+  try {
+    const endpoint = `/users/${userId}`;
 
-      // ===== 1) CONSOLE LOG TRƯỚC (như bạn yêu cầu) =====
-      console.log("===== [EditProfile] BEFORE SAVE =====");
-      console.log("userId:", userId); 
-      console.log("avatarFile (picked):", avatarFile);
-      console.log("endpoint:", endpoint);
-      console.log("userId:", userId);
-      console.log("fullname:", fullname);
-      console.log("phone:", phone);
-      console.log("gender:", gender);
-      console.log("dob:", dob);
-      console.log("avatarUri (preview):", avatarUri);
-      console.log("avatarFile (picked):", avatarFile);
+    // ====== LOG TRƯỚC ======
+    console.log("===== [EditProfile] BEFORE SAVE =====");
+    console.log("userId:", userId);
+    console.log("endpoint:", endpoint);
+    console.log("user (redux):", user);
+    console.log("fullname:", fullname);
+    console.log("phone:", phone);
+    console.log("gender:", gender);
+    console.log("dob:", dob);
+    console.log("avatarUri:", avatarUri);
+    console.log("avatarFile:", avatarFile);
 
+    // ====== AVATAR FLOW (BẠN GẮN API UPLOAD SAU) ======
+    // Nếu user chọn ảnh mới -> upload lấy URL
+    // Nếu không chọn ảnh mới -> dùng avatarUri (URL cũ) hoặc null nếu xóa
+    let avatarUrl = avatarUri || null;
 
-      // ===== 2) GIẢ LẬP FLOW: upload avatar -> lấy avatarUrl =====
-      // Nếu user chọn ảnh mới -> bạn sẽ upload để lấy URL
-      // Nếu không chọn ảnh mới -> giữ URL cũ (user.avatar) hoặc null nếu user xoá
-      let avatarUrl = null;
+    if (avatarFile) {
+      console.log("👉 Cần upload avatarFile để lấy avatarUrl (bạn gắn API sau).");
 
-      if (avatarFile) {
-        console.log("👉 Cần upload avatarFile để lấy avatarUrl (bạn tự gắn API).");
-
-        // ====== API UPLOAD AVATAR (BẠN GẮN SAU) ======
-        // const form = new FormData();
-        // form.append("file", {
-        //   uri: avatarFile.uri,
-        //   name: avatarFile.name,
-        //   type: avatarFile.type,
-        // });
-        //
-        // const uploadRes = await api.post("/files/upload-avatar", form, {
-        //   headers: { "Content-Type": "multipart/form-data" },
-        // });
-        //
-        // avatarUrl = uploadRes?.data?.url || uploadRes?.data?.data?.url;
-        // if (!avatarUrl) throw new Error("Upload avatar failed: missing url in response");
-        // =============================================
-
-        // Tạm thời: để bạn thấy payload, mình giả lập avatarUrl = "(uploaded_url_here)"
-        avatarUrl = "(uploaded_url_here)";
-      } else {
-        // Không chọn ảnh mới
-        // - nếu avatarUri rỗng => user xoá avatar => avatarUrl = null
-        // - nếu avatarUri còn => có thể là URL cũ => dùng lại
-        avatarUrl = avatarUri ? avatarUri : null;
-      }
-
-      const payload = buildPayloadForConsole(avatarUrl);
-
-      // ===== 3) CONSOLE LOG SAU: payload cuối cùng =====
-      console.log("===== [EditProfile] AFTER PREPARE PAYLOAD =====");
-      console.log("final avatarUrl:", avatarUrl);
-      console.log("payload:", payload);
-
-      // ===== 4) API UPDATE PROFILE (BẠN GẮN SAU) =====
-      // Tuỳ BE: PUT hoặc PATCH
-      // const res = await api.put(endpoint, payload);
-      // const updatedUser = extractUserFromResponse(res?.data);
-      // if (!updatedUser) {
-      //   Alert.alert("Cập nhật thất bại", "Không đọc được dữ liệu user trả về từ server.");
-      //   return;
-      // }
+      // ====== UPLOAD API (comment lại cho bạn gắn sau) ======
+      // const form = new FormData();
+      // form.append("file", {
+      //   uri: avatarFile.uri,
+      //   name: avatarFile.name,
+      //   type: avatarFile.type,
+      // });
       //
-      // dispatch({ type: "auth/setUser", payload: updatedUser });
-      // Alert.alert("Thành công", "Đã cập nhật thông tin cá nhân.");
-      // navigation.goBack();
-      // ==============================================
+      // const uploadRes = await api.post("/files/upload-avatar", form, {
+      //   headers: { "Content-Type": "multipart/form-data" },
+      // });
+      //
+      // // uploadRes lúc này cũng là response.data (do interceptor)
+      // // Tùy backend trả: uploadRes.data.url hoặc uploadRes.url
+      // avatarUrl = uploadRes?.data?.url || uploadRes?.url;
+      // if (!avatarUrl) throw new Error("Upload avatar thất bại (không có url).");
+      // ======================================================
 
-      // Tạm thời để test UI: báo thành công giả lập
-      Alert.alert("Đã log payload", "Mở console để xem BEFORE/AFTER. Bạn gắn API sau.");
-    } catch (err) {
-      console.error("❌ Update profile error:", err?.response?.data || err);
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Không thể cập nhật. Vui lòng thử lại.";
-      Alert.alert("Lỗi", msg);
-    } finally {
-      setSaving(false);
+      // Tạm thời để bạn test log:
+      avatarUrl = "(uploaded_url_here)";
     }
-  };
+
+    const payload = {
+    fullname: fullname.trim(),
+    phone: phone?.trim() || null,
+    gender,
+    dob: dob ? new Date(dob).toISOString() : null,
+    avatar: avatarUrl,
+    };
+
+
+    // ====== LOG SAU ======
+    console.log("===== [EditProfile] AFTER PREPARE PAYLOAD =====");
+    console.log("final avatarUrl:", avatarUrl);
+    console.log("payload:", payload);
+
+    // ====== GỌI THẲNG API UPDATE (backend của bạn: PUT /users/:id) ======
+    // res ở đây là ResponseModel vì APIClient đã return response.data
+    const res = await api.put(endpoint, payload);
+
+    console.log("===== [EditProfile] UPDATE RESPONSE =====");
+    console.log("res:", res);
+
+    // Backend ResponseModel: { status, statusCode, message, data }
+    if (!res?.status) {
+      Alert.alert("Cập nhật thất bại", res?.message || "Update failed");
+      return;
+    }
+
+    const updatedUser = res?.data; // user sau khi update
+    if (!updatedUser) {
+      Alert.alert("Cập nhật thất bại", "Không có user trả về từ server.");
+      return;
+    }
+
+    // Update redux (đúng theo slice của bạn nếu khác thì đổi type)
+    dispatch({ type: "auth/setUser", payload: updatedUser });
+    dispatch(updateUser(updatedUser));  
+    Alert.alert("Thành công", res?.message || "Đã cập nhật thông tin cá nhân.");
+    navigation.goBack();
+  } catch (err) {
+    // err có thể là error.response?.data hoặc error (do interceptor reject)
+    console.error("❌ Update profile error:", err);
+    const msg = err?.message || err?.error || "Không thể cập nhật. Vui lòng thử lại.";
+    Alert.alert("Lỗi", msg);
+  } finally {
+    setSaving(false);
+  }
+};
 
   const onCancel = () => navigation.goBack();
 
@@ -267,13 +276,6 @@ export default function EditProfileScreen() {
                 onPress={() => setGender(false)}
               >
                 <Text style={[styles.genderText, gender === false && styles.genderTextActive]}>Nữ</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.genderBtn, gender === null && styles.genderBtnActive]}
-                onPress={() => setGender(null)}
-              >
-                <Text style={[styles.genderText, gender === null && styles.genderTextActive]}>Không rõ</Text>
               </TouchableOpacity>
             </View>
 

@@ -107,7 +107,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* ROLES */}
-        <Card style={styles.card}>
+        {/* <Card style={styles.card}>
           <Card.Content>
             <Text style={styles.cardTitle}>Vai trò</Text>
             <View style={styles.rolesWrap}>
@@ -122,7 +122,7 @@ export default function ProfileScreen() {
               )}
             </View>
           </Card.Content>
-        </Card>
+        </Card> */}
 
         {/* PERSONAL INFO */}
         <Card style={styles.card}>
