@@ -49,12 +49,13 @@ const authSlice = createSlice({
 
     // ✅ THÊM HÀM NÀY
     updateUser: (state, action) => {
+      const payload = action.payload || {};
+      const { roles, permissions, ...basic } = payload; // ✅ bỏ 2 field này
+
       state.user = {
         ...(state.user || {}),
-        ...(action.payload || {}),
+        ...basic, // ✅ chỉ update thông tin cơ bản
       };
-      state.permissions = state.user?.permissions || [];
-      state.roles = state.user?.roles || [];
     },
   },
   extraReducers: (builder) => {

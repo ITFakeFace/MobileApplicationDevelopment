@@ -50,6 +50,7 @@ const InfoRow = ({ icon, label, value }) => {
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const { user } = useSelector((state) => state.auth);
+  const baseUrl = useSelector((state) => state.config?.baseUrl || "http://localhost:3000"); 
 
   const initials = useMemo(() => {
     const name = user?.fullname || user?.username || "";
@@ -70,7 +71,7 @@ export default function ProfileScreen() {
           <Card.Content style={styles.headerContent}>
             <View style={styles.avatarWrap}>
               {user?.avatar ? (
-                <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
+                <Image source={{uri:`${baseUrl}${user.avatar}`}} style={styles.avatarImage} />
               ) : (
                 <View style={[styles.avatarFallback, { backgroundColor: FALLBACK_AVATAR_BG }]}>
                   <Text style={styles.avatarInitials}>{initials}</Text>
