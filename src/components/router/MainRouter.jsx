@@ -11,6 +11,7 @@ import MainNavigator from '../navigator/MainNavigator';
 import AuthNavigator from '../navigator/AuthNavigator';
 import SettingIpScreen from '../screen/SettingIpScreen';
 import ProfileScreen from '../screen/ProfileScreen';
+import SettingOptionScreen from '../screen/UserOptionScreen copy';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,6 +41,11 @@ export default function MainRouter() {
             name="Profile" 
             component={ProfileScreen} 
             options={{ headerShown: true, title: 'Hồ sơ cá nhân' }} 
+          />
+          <Stack.Screen 
+            name="SettingOptionScreen" 
+            component={SettingOptionScreen} 
+            options={{ headerShown: true, title: 'Cài đặt' }} 
           />
           </>
         ) : (
