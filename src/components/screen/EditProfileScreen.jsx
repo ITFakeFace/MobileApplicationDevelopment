@@ -111,17 +111,15 @@ export default function EditProfileScreen() {
     };
   };
 
- const onSave = async () => {
+const onSave = async () => {
   if (!userId) {
     Alert.alert("Lỗi", "Không tìm thấy thông tin user.");
     return;
   }
-
   if (!fullname?.trim()) {
     Alert.alert("Thiếu thông tin", "Vui lòng nhập họ và tên.");
     return;
   }
-
   if (!isDobValid) {
     Alert.alert("Sai định dạng", "Ngày sinh phải theo định dạng YYYY-MM-DD (vd: 1990-01-01).");
     return;
@@ -131,88 +129,67 @@ export default function EditProfileScreen() {
   try {
     const endpoint = `/users/${userId}`;
 
-    // ====== LOG TRƯỚC ======
-    console.log("===== [EditProfile] BEFORE SAVE =====");
-    console.log("userId:", userId);
-    console.log("endpoint:", endpoint);
-    console.log("user (redux):", user);
-    console.log("fullname:", fullname);
-    console.log("phone:", phone);
-    console.log("gender:", gender);
-    console.log("dob:", dob);
-    console.log("avatarUri:", avatarUri);
-    console.log("avatarFile:", avatarFile);
+    // ====== 1) TẠO FORMDATA ======
+    const form = new FormData();
 
-    // ====== AVATAR FLOW (BẠN GẮN API UPLOAD SAU) ======
-    // Nếu user chọn ảnh mới -> upload lấy URL
-    // Nếu không chọn ảnh mới -> dùng avatarUri (URL cũ) hoặc null nếu xóa
-    let avatarUrl = avatarUri || null;
+    // Các field text (FormData luôn là string)
+    form.append("fullname", fullname.trim());
+    form.append("phone", phone?.trim() || ""); // backend muốn null thì backend tự map "" -> null
+    form.append("gender", gender === null ? "" : String(gender)); // "true"/"false"/""
+    form.append("dob", dob ? new Date(dob).toISOString() : "");
 
-    if (avatarFile) {
-      console.log("👉 Cần upload avatarFile để lấy avatarUrl (bạn gắn API sau).");
+    // Nếu backend bạn đang bị bắt roles thì tạm gửi luôn (tùy UpdateUserDto)
+    // Nếu roles là mảng string: ["SUPER_ADMIN"] -> append từng cái
+    // (Backend multipart thường đọc roles dưới dạng array)
+    // if (Array.isArray(user?.roles)) {
+    //   user.roles.forEach((r) => form.append("roles[]", String(r)));
+    // }
 
-      // ====== UPLOAD API (comment lại cho bạn gắn sau) ======
-      // const form = new FormData();
-      // form.append("file", {
-      //   uri: avatarFile.uri,
-      //   name: avatarFile.name,
-      //   type: avatarFile.type,
-      // });
-      //
-      // const uploadRes = await api.post("/files/upload-avatar", form, {
-      //   headers: { "Content-Type": "multipart/form-data" },
-      // });
-      //
-      // // uploadRes lúc này cũng là response.data (do interceptor)
-      // // Tùy backend trả: uploadRes.data.url hoặc uploadRes.url
-      // avatarUrl = uploadRes?.data?.url || uploadRes?.url;
-      // if (!avatarUrl) throw new Error("Upload avatar thất bại (không có url).");
-      // ======================================================
-
-      // Tạm thời để bạn test log:
-      avatarUrl = "(uploaded_url_here)";
+    // ====== 2) ĐÍNH KÈM FILE ẢNH (nếu có) ======
+    // QUAN TRỌNG: key "file" phải khớp backend (ví dụ FileInterceptor('file'))
+    if (avatarFile?.uri) {
+      form.append("file", {
+        uri: avatarFile.uri,
+        name: avatarFile.name || `avatar_${Date.now()}.jpg`,
+        type: avatarFile.type || "image/jpeg",
+      });
     }
 
-    const payload = {
-    fullname: fullname.trim(),
-    phone: phone?.trim() || null,
-    gender,
-    dob: dob ? new Date(dob).toISOString() : null,
-    avatar: avatarUrl,
-    };
+    // ====== LOG DEBUG ======
+    console.log("===== [EditProfile] MULTIPART SAVE =====");
+    console.log("userId:", userId);
+    console.log("endpoint:", endpoint);
+    console.log("avatarFile:", avatarFile);
+    console.log("fields:", {
+      fullname: fullname.trim(),
+      phone: phone?.trim() || "",
+      gender: gender === null ? "" : String(gender),
+      dob: dob ? new Date(dob).toISOString() : "",
+    });
 
+    // ====== 3) GỬI PUT multipart ======
+    const res = await api.put(endpoint, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
 
-    // ====== LOG SAU ======
-    console.log("===== [EditProfile] AFTER PREPARE PAYLOAD =====");
-    console.log("final avatarUrl:", avatarUrl);
-    console.log("payload:", payload);
+    console.log("===== [EditProfile] RESPONSE =====");
+    console.log(res);
 
-    // ====== GỌI THẲNG API UPDATE (backend của bạn: PUT /users/:id) ======
-    // res ở đây là ResponseModel vì APIClient đã return response.data
-    const res = await api.put(endpoint, payload);
-
-    console.log("===== [EditProfile] UPDATE RESPONSE =====");
-    console.log("res:", res);
-
-    // Backend ResponseModel: { status, statusCode, message, data }
     if (!res?.status) {
       Alert.alert("Cập nhật thất bại", res?.message || "Update failed");
       return;
     }
 
-    const updatedUser = res?.data; // user sau khi update
+    const updatedUser = res?.data;
     if (!updatedUser) {
       Alert.alert("Cập nhật thất bại", "Không có user trả về từ server.");
       return;
     }
 
-    // Update redux (đúng theo slice của bạn nếu khác thì đổi type)
-    dispatch({ type: "auth/setUser", payload: updatedUser });
-    dispatch(updateUser(updatedUser));  
+    dispatch(updateUser(updatedUser));
     Alert.alert("Thành công", res?.message || "Đã cập nhật thông tin cá nhân.");
     navigation.goBack();
   } catch (err) {
-    // err có thể là error.response?.data hoặc error (do interceptor reject)
     console.error("❌ Update profile error:", err);
     const msg = err?.message || err?.error || "Không thể cập nhật. Vui lòng thử lại.";
     Alert.alert("Lỗi", msg);
@@ -220,6 +197,7 @@ export default function EditProfileScreen() {
     setSaving(false);
   }
 };
+
 
   const onCancel = () => navigation.goBack();
 

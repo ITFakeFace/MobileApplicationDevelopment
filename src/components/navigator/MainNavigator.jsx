@@ -18,7 +18,7 @@ const LogoutPlaceholder = () => <View />;
 
 export default function MainNavigator() {
   const dispatch = useDispatch();
-  const { roles } = useSelector((state) => state.auth);
+  const { roles } = useSelector((state)=>state.auth);
   return (
     <Tab.Navigator
       screenOptions={{ headerShown: false }}

@@ -10,6 +10,8 @@ const UserOptionScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const baseUrl = useSelector((state) => state.config?.baseUrl || "http://localhost:3000"); 
+
   const handleLogout = () => {
     Alert.alert(
       "Đăng xuất",
@@ -42,7 +44,7 @@ const UserOptionScreen = () => {
       onPress: () => navigation.navigate("Help"),
     },
   ];
-
+  console.log(`${baseUrl}${user.avatar}`);
   return (
     <MainLayout>
       <ScrollView className="flex-1 bg-gray-50">
@@ -53,7 +55,7 @@ const UserOptionScreen = () => {
         >
           {user?.avatar ? (
             <Image
-              source={{ uri: user.avatar }}
+              source={{uri:`${baseUrl}${user.avatar}`}}
               className="w-16 h-16 rounded-full"
             />
           ) : (

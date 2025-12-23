@@ -54,6 +54,7 @@ const authSlice = createSlice({
         ...(action.payload || {}),
       };
       state.permissions = state.user?.permissions || [];
+      state.roles = state.user?.roles || [];
     },
   },
   extraReducers: (builder) => {
