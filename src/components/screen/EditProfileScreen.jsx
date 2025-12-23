@@ -8,39 +8,24 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import { Card, Divider } from "react-native-paper";
 import Icon from "react-native-vector-icons/FontAwesome";
 import moment from "moment";
 import { useNavigation } from "@react-navigation/native";
-
 import { useSelector, useDispatch } from "react-redux";
+
 import MainLayout from "../layout/MainLayout";
 import api from "../../api/APIClient";
+import * as ImagePicker from "expo-image-picker";
+
+const buildUpdateEndpoint = (userId) => `/users/${userId}`;
 
 /**
- * ====== IMPORTANT: ĐỔI ENDPOINT CHO KHỚP BACKEND ======
- * Ví dụ hay gặp:
- * - PUT /users/:id
- * - PATCH /users/:id
- * - PUT /auth/profile
- * - PATCH /auth/profile
+ * Helper: đọc user từ response (giữ lại để bạn dùng khi gắn API thật)
  */
-const buildUpdateEndpoint = (userId) => `/users/${userId}`;
-// const buildUpdateEndpoint = () => `/auth/profile`;
-
-function getApiList(data) {
-  if (Array.isArray(data)) return data;
-  if (data?.data && Array.isArray(data.data)) return data.data;
-  return null;
-}
-
 function extractUserFromResponse(resData) {
-  // Ưu tiên các kiểu response phổ biến:
-  // 1) { status: true, data: { user: {...} } }
-  // 2) { status: true, data: {...userFields} }
-  // 3) { user: {...} }
-  // 4) trả thẳng {...userFields}
   if (resData?.data?.user) return resData.data.user;
   if (resData?.user) return resData.user;
   if (resData?.data && typeof resData.data === "object") return resData.data;
@@ -60,7 +45,10 @@ export default function EditProfileScreen() {
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState(null); // boolean | null
   const [dob, setDob] = useState(""); // YYYY-MM-DD
-  const [avatar, setAvatar] = useState("");
+
+  // Avatar upload state (Expo ImagePicker)
+  const [avatarUri, setAvatarUri] = useState(user?.avatar ?? ""); // preview (local uri hoặc remote url)
+  const [avatarFile, setAvatarFile] = useState(null); // { uri, name, type }
 
   const [saving, setSaving] = useState(false);
 
@@ -71,24 +59,55 @@ export default function EditProfileScreen() {
     setPhone(user?.phone ?? "");
     setGender(user?.gender ?? null);
     setDob(user?.dob ? moment(user.dob).format("YYYY-MM-DD") : "");
-    setAvatar(user?.avatar ?? "");
+    setAvatarUri(user?.avatar ?? "");
+    setAvatarFile(null);
   }, [user]);
 
   const isDobValid = useMemo(() => {
-    if (!dob) return true; // cho phép rỗng
+    if (!dob) return true;
     return moment(dob, "YYYY-MM-DD", true).isValid();
   }, [dob]);
 
-  const buildPayload = () => {
-    // Chỉ gửi các field cần sửa (bạn có thể mở rộng thêm)
-    const payload = {
+  const pickAvatar = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Thiếu quyền", "Bạn cần cấp quyền truy cập thư viện ảnh.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.85,
+      aspect: [1, 1],
+    });
+
+    if (result.canceled) return;
+
+    const asset = result.assets?.[0];
+    if (!asset?.uri) return;
+
+    const name = asset.fileName || `avatar_${Date.now()}.jpg`;
+    const type = asset.mimeType || "image/jpeg";
+
+    setAvatarUri(asset.uri);
+    setAvatarFile({ uri: asset.uri, name, type });
+  };
+
+  const clearAvatar = () => {
+    // Xoá avatar đang chọn (chỉ xoá local selection, không gọi API)
+    setAvatarUri("");
+    setAvatarFile(null);
+  };
+
+  const buildPayloadForConsole = (finalAvatarUrl) => {
+    return {
       fullname: fullname?.trim(),
       phone: phone?.trim() || null,
-      gender: gender, // true/false/null (tùy BE cho phép)
+      gender: gender,
       dob: dob ? new Date(dob).toISOString() : null,
-      avatar: avatar?.trim() || null,
+      avatar: finalAvatarUrl ?? null, // URL sau khi upload (tạm thời console)
     };
-    return payload;
   };
 
   const onSave = async () => {
@@ -111,29 +130,76 @@ export default function EditProfileScreen() {
     try {
       const endpoint = buildUpdateEndpoint(userId);
 
-      // Tuỳ BE: dùng PUT hoặc PATCH. Nếu BE của bạn partial update, ưu tiên PATCH.
-      // const res = await api.patch(endpoint, buildPayload());
-      const res = await api.put(endpoint, buildPayload());
+      // ===== 1) CONSOLE LOG TRƯỚC (như bạn yêu cầu) =====
+      console.log("===== [EditProfile] BEFORE SAVE =====");
+      console.log("userId:", userId); 
+      console.log("avatarFile (picked):", avatarFile);
+      console.log("endpoint:", endpoint);
+      console.log("userId:", userId);
+      console.log("fullname:", fullname);
+      console.log("phone:", phone);
+      console.log("gender:", gender);
+      console.log("dob:", dob);
+      console.log("avatarUri (preview):", avatarUri);
+      console.log("avatarFile (picked):", avatarFile);
 
-      const updatedUser = extractUserFromResponse(res?.data);
 
-      if (!updatedUser) {
-        Alert.alert("Cập nhật thất bại", "Không đọc được dữ liệu user trả về từ server.");
-        return;
+      // ===== 2) GIẢ LẬP FLOW: upload avatar -> lấy avatarUrl =====
+      // Nếu user chọn ảnh mới -> bạn sẽ upload để lấy URL
+      // Nếu không chọn ảnh mới -> giữ URL cũ (user.avatar) hoặc null nếu user xoá
+      let avatarUrl = null;
+
+      if (avatarFile) {
+        console.log("👉 Cần upload avatarFile để lấy avatarUrl (bạn tự gắn API).");
+
+        // ====== API UPLOAD AVATAR (BẠN GẮN SAU) ======
+        // const form = new FormData();
+        // form.append("file", {
+        //   uri: avatarFile.uri,
+        //   name: avatarFile.name,
+        //   type: avatarFile.type,
+        // });
+        //
+        // const uploadRes = await api.post("/files/upload-avatar", form, {
+        //   headers: { "Content-Type": "multipart/form-data" },
+        // });
+        //
+        // avatarUrl = uploadRes?.data?.url || uploadRes?.data?.data?.url;
+        // if (!avatarUrl) throw new Error("Upload avatar failed: missing url in response");
+        // =============================================
+
+        // Tạm thời: để bạn thấy payload, mình giả lập avatarUrl = "(uploaded_url_here)"
+        avatarUrl = "(uploaded_url_here)";
+      } else {
+        // Không chọn ảnh mới
+        // - nếu avatarUri rỗng => user xoá avatar => avatarUrl = null
+        // - nếu avatarUri còn => có thể là URL cũ => dùng lại
+        avatarUrl = avatarUri ? avatarUri : null;
       }
 
-      /**
-       * ====== IMPORTANT: cập nhật Redux user ======
-       * Bạn thay dòng dispatch này bằng action thật của authSlice bạn đang dùng.
-       *
-       * Ví dụ:
-       * dispatch(setUser(updatedUser));
-       * dispatch(updateUser(updatedUser));
-       */
-      dispatch({ type: "auth/setUser", payload: updatedUser });
+      const payload = buildPayloadForConsole(avatarUrl);
 
-      Alert.alert("Thành công", "Đã cập nhật thông tin cá nhân.");
-      navigation.goBack();
+      // ===== 3) CONSOLE LOG SAU: payload cuối cùng =====
+      console.log("===== [EditProfile] AFTER PREPARE PAYLOAD =====");
+      console.log("final avatarUrl:", avatarUrl);
+      console.log("payload:", payload);
+
+      // ===== 4) API UPDATE PROFILE (BẠN GẮN SAU) =====
+      // Tuỳ BE: PUT hoặc PATCH
+      // const res = await api.put(endpoint, payload);
+      // const updatedUser = extractUserFromResponse(res?.data);
+      // if (!updatedUser) {
+      //   Alert.alert("Cập nhật thất bại", "Không đọc được dữ liệu user trả về từ server.");
+      //   return;
+      // }
+      //
+      // dispatch({ type: "auth/setUser", payload: updatedUser });
+      // Alert.alert("Thành công", "Đã cập nhật thông tin cá nhân.");
+      // navigation.goBack();
+      // ==============================================
+
+      // Tạm thời để test UI: báo thành công giả lập
+      Alert.alert("Đã log payload", "Mở console để xem BEFORE/AFTER. Bạn gắn API sau.");
     } catch (err) {
       console.error("❌ Update profile error:", err?.response?.data || err);
       const msg =
@@ -193,27 +259,21 @@ export default function EditProfileScreen() {
                 style={[styles.genderBtn, gender === true && styles.genderBtnActive]}
                 onPress={() => setGender(true)}
               >
-                <Text style={[styles.genderText, gender === true && styles.genderTextActive]}>
-                  Nam
-                </Text>
+                <Text style={[styles.genderText, gender === true && styles.genderTextActive]}>Nam</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.genderBtn, gender === false && styles.genderBtnActive]}
                 onPress={() => setGender(false)}
               >
-                <Text style={[styles.genderText, gender === false && styles.genderTextActive]}>
-                  Nữ
-                </Text>
+                <Text style={[styles.genderText, gender === false && styles.genderTextActive]}>Nữ</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.genderBtn, gender === null && styles.genderBtnActive]}
                 onPress={() => setGender(null)}
               >
-                <Text style={[styles.genderText, gender === null && styles.genderTextActive]}>
-                  Không rõ
-                </Text>
+                <Text style={[styles.genderText, gender === null && styles.genderTextActive]}>Không rõ</Text>
               </TouchableOpacity>
             </View>
 
@@ -236,21 +296,35 @@ export default function EditProfileScreen() {
 
         <Card style={styles.card}>
           <Card.Content>
-            <Text style={styles.sectionTitle}>Nâng cao</Text>
+            <Text style={styles.sectionTitle}>Avatar</Text>
             <Divider style={{ marginVertical: 10 }} />
 
-            {/* Avatar */}
-            <Text style={styles.label}>Avatar URL</Text>
-            <View style={styles.inputWrap}>
-              <Icon name="image" size={16} color="#6B7280" style={styles.inputIcon} />
-              <TextInput
-                value={avatar}
-                onChangeText={setAvatar}
-                placeholder="https://..."
-                autoCapitalize="none"
-                style={styles.input}
-              />
+            <View style={styles.avatarRow}>
+              <View style={styles.avatarPreview}>
+                {avatarUri ? (
+                  <Image source={{ uri: avatarUri }} style={styles.avatarImg} />
+                ) : (
+                  <View style={styles.avatarFallback}>
+                    <Icon name="user" size={18} color="#fff" />
+                  </View>
+                )}
+              </View>
+
+              <TouchableOpacity style={styles.pickBtn} onPress={pickAvatar} disabled={saving}>
+                <Icon name="image" size={16} color="#fff" />
+                <Text style={styles.pickBtnText}>Chọn ảnh</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.pickBtn, { backgroundColor: "#6B7280" }]}
+                onPress={clearAvatar}
+                disabled={saving}
+              >
+                <Icon name="trash" size={16} color="#fff" />
+                <Text style={styles.pickBtnText}>Xoá</Text>
+              </TouchableOpacity>
             </View>
+
 
             {/* Email + PID (readonly) */}
             <Text style={styles.label}>Email (không chỉnh sửa)</Text>
@@ -269,11 +343,19 @@ export default function EditProfileScreen() {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <TouchableOpacity style={[styles.btn, styles.btnGhost]} onPress={onCancel} disabled={saving}>
+          <TouchableOpacity
+            style={[styles.btn, styles.btnGhost]}
+            onPress={onCancel}
+            disabled={saving}
+          >
             <Text style={[styles.btnText, styles.btnGhostText]}>Hủy</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={onSave} disabled={saving}>
+          <TouchableOpacity
+            style={[styles.btn, styles.btnPrimary]}
+            onPress={onSave}
+            disabled={saving}
+          >
             {saving ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -348,4 +430,29 @@ const styles = StyleSheet.create({
   btnGhost: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
   btnText: { color: "#fff", fontWeight: "800" },
   btnGhostText: { color: "#111827" },
+
+  // Avatar UI
+  avatarRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  avatarPreview: { width: 56, height: 56, borderRadius: 28, overflow: "hidden" },
+  avatarImg: { width: 56, height: 56 },
+  avatarFallback: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#4F46E5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pickBtn: {
+    backgroundColor: "#4F46E5",
+    paddingHorizontal: 12,
+    height: 44,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  pickBtnText: { color: "#fff", fontWeight: "800" },
+
+  hintText: { marginTop: 10, color: "#6B7280", fontSize: 12, lineHeight: 18 },
 });

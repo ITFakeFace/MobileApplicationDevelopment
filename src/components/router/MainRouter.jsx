@@ -11,6 +11,7 @@ import MainNavigator from '../navigator/MainNavigator';
 import AuthNavigator from '../navigator/AuthNavigator';
 import SettingIpScreen from '../screen/SettingIpScreen';
 import ProfileScreen from '../screen/ProfileScreen';
+import EditProfileScreen from '../screen/EditProfileScreen';
 import SettingOptionScreen from '../screen/UserOptionScreen copy';
 
 const Stack = createNativeStackNavigator();
