@@ -19,6 +19,7 @@ import AboutUsScreen from '../screen/AboutUsScreen';
 import TeacherClassSessionScreen from '../screen/teacher-screens/TeacherClassSessionScreen';
 import StudentClassSessionScreen from '../screen/student-screens/StudentClassSessionScreen';
 import TeacherAttendanceDetailScreen from '../screen/teacher-screens/TeacherAttendanceDetailScreen';
+import CourseDetailScreen from '../screen/CourseDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -104,6 +105,11 @@ export default function MainRouter() {
             name="AboutUs" 
             component={AboutUsScreen} 
             options={{ headerShown: true, title: 'Về chúng tôi' }} 
+          />
+          <Stack.Screen
+            name="CourseDetail"
+            component={CourseDetailScreen}
+            options={{ title: "Chi tiết khóa học" }}
           />
           </>
         ) : (

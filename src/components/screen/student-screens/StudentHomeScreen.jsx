@@ -397,9 +397,10 @@ const StudentHomeScreen = () => {
                   key={course.id || index}
                   entering={FadeInRight.delay(index * 100).duration(500)}
                 >
-                  <TouchableOpacity
-                    style={styles.courseCard}
-                    onPress={() => console.log("Detail:", course.id)}
+                  <TouchableOpacity 
+                    style={styles.courseCard} 
+                    // onPress={() => console.log("Detail:", course.id)}
+                    onPress={() => navigation.navigate("CourseDetail", { courseId: course.id })}
                   >
                     <Image
                       source={{ uri: course.image }}
