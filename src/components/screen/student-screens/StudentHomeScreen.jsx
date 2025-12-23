@@ -43,7 +43,7 @@ const StudentHomeScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   // --- 1. HÀM LẤY LỊCH HỌC ---
-  const fetchTeacherSchedule = async () => {
+  const fetchSchedule = async () => {
     if (!studentId) return;
     
     // setLoading(true); // Tùy chọn: bật loading ở đây hoặc ở useEffect
@@ -54,7 +54,8 @@ const StudentHomeScreen = () => {
       const toDate = moment().add(1, 'year').endOf('month').format('YYYY-MM-DD');
       
       // Gọi API dành riêng cho Teacher
-      const response = await api.get(`/courses/teacher-schedule?studentId=${studentId}&fromDate=${fromDate}&toDate=${toDate}`);
+      console.log("Calling student schedule API for studentId:"+`/enrollments/schedule?studentId=${studentId}&fromDate=${fromDate}&toDate=${toDate}`);
+      const response = await api.get(`/enrollments/schedule?studentId=${studentId}&fromDate=${fromDate}&toDate=${toDate}`);
 
       // Xử lý dữ liệu trả về an toàn
       let rawList = [];

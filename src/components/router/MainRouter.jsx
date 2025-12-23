@@ -12,7 +12,10 @@ import AuthNavigator from '../navigator/AuthNavigator';
 import SettingIpScreen from '../screen/SettingIpScreen';
 import ProfileScreen from '../screen/ProfileScreen';
 import EditProfileScreen from '../screen/EditProfileScreen';
-import SettingOptionScreen from '../screen/UserOptionScreen copy';
+import SettingOptionScreen from '../screen/SettingOptionScreen';
+import RequestFormScreen from '../screen/student-screens/RequestFormScreen';
+import ContactUsScreen from '../screen/ContactUsScreen';
+import AboutUsScreen from '../screen/AboutUsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -46,12 +49,27 @@ export default function MainRouter() {
           <Stack.Screen 
             name="EditProfile" 
             component={EditProfileScreen} 
-            options={{ headerShown: true, title: 'Hồ sơ cá nhân' }} 
+            options={{ headerShown: true, title: 'Chỉnh sửa hồ sơ' }} 
           />
           <Stack.Screen 
-            name="SettingOptionScreen" 
+            name="SettingOption" 
             component={SettingOptionScreen} 
             options={{ headerShown: true, title: 'Cài đặt' }} 
+          />
+          <Stack.Screen 
+            name="RequestForm" 
+            component={RequestFormScreen} 
+            options={{ headerShown: true, title: 'Yêu cầu hỗ trợ' }} 
+          />
+          <Stack.Screen 
+            name="ContactUs" 
+            component={ContactUsScreen} 
+            options={{ headerShown: true, title: 'Thông tin liên lạc' }} 
+          />
+          <Stack.Screen 
+            name="AboutUs" 
+            component={AboutUsScreen} 
+            options={{ headerShown: true, title: 'Về chúng tôi' }} 
           />
           </>
         ) : (
