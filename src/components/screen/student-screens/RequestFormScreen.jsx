@@ -20,6 +20,24 @@ import {
   TouchableRipple,
 } from "react-native-paper";
 
+/** ---------- STATUS (3 trạng thái) -> Tiếng Việt ---------- **/
+const STATUS_VI = {
+  PENDING: "Đang chờ xử lý",
+  RESOLVED: "Đã giải quyết", // nếu muốn: "Đã duyệt"
+  REJECTED: "Đã từ chối",
+};
+
+function normalizeStatus(statusRaw) {
+  const s = String(statusRaw || "PENDING").trim().toUpperCase();
+  if (s === "PENDING" || s === "RESOLVED" || s === "REJECTED") return s;
+  return "PENDING";
+}
+
+function statusLabelVi(statusRaw) {
+  const k = normalizeStatus(statusRaw);
+  return STATUS_VI[k] || STATUS_VI.PENDING;
+}
+
 /** ---------- UI helpers ---------- **/
 const ShadowCard = React.memo(function ShadowCard({ children, style }) {
   return (
@@ -30,14 +48,16 @@ const ShadowCard = React.memo(function ShadowCard({ children, style }) {
 });
 
 function statusTone(statusRaw) {
-  const s = String(statusRaw || "").toUpperCase();
-  if (s.includes("APPROVED") || s.includes("DONE") || s.includes("RESOLVED"))
-    return { bg: "#ECFDF3", fg: "#027A48", bd: "#ABEFC6" };
-  if (s.includes("REJECT") || s.includes("CANCEL") || s.includes("FAILED"))
-    return { bg: "#FEF3F2", fg: "#B42318", bd: "#FECDCA" };
-  if (s.includes("PROCESS") || s.includes("IN_PROGRESS"))
-    return { bg: "#FFFAEB", fg: "#B54708", bd: "#FEC84B" };
-  return { bg: "#EEF2FF", fg: "#4338CA", bd: "#C7D2FE" };
+  const k = normalizeStatus(statusRaw);
+
+  // RESOLVED: xanh
+  if (k === "RESOLVED") return { bg: "#ECFDF3", fg: "#027A48", bd: "#ABEFC6" };
+
+  // REJECTED: đỏ
+  if (k === "REJECTED") return { bg: "#FEF3F2", fg: "#B42318", bd: "#FECDCA" };
+
+  // PENDING: vàng
+  return { bg: "#FFFAEB", fg: "#B54708", bd: "#FEC84B" };
 }
 
 const StatusPill = React.memo(function StatusPill({ status }) {
@@ -46,7 +66,7 @@ const StatusPill = React.memo(function StatusPill({ status }) {
     <View style={[styles.pill, { backgroundColor: t.bg, borderColor: t.bd }]}>
       <View style={[styles.pillDot, { backgroundColor: t.fg }]} />
       <Text style={[styles.pillText, { color: t.fg }]} numberOfLines={1}>
-        {status ? String(status).toUpperCase() : "PENDING"}
+        {statusLabelVi(status)}
       </Text>
     </View>
   );
@@ -155,7 +175,7 @@ const ListCard = React.memo(function ListCard({
       ) : (
         <View style={styles.listContainer}>
           {requests.map((item, idx) => (
-            <View key={item?.id ?? idx}>
+            <View key={item?.id ?? String(idx)}>
               <TouchableRipple
                 onPress={() => onOpenDetail(item?.id)}
                 rippleColor="rgba(0,0,0,0.06)"
@@ -166,10 +186,12 @@ const ListCard = React.memo(function ListCard({
                     <Text style={styles.itemTitle} numberOfLines={1}>
                       {item?.title || "(Không có tiêu đề)"}
                     </Text>
+
                     <View style={{ marginTop: 6, flexDirection: "row", alignItems: "center" }}>
                       <StatusPill status={item?.status || "PENDING"} />
                     </View>
                   </View>
+
                   <Text style={styles.itemChevron}>›</Text>
                 </View>
               </TouchableRipple>
@@ -184,12 +206,8 @@ const ListCard = React.memo(function ListCard({
 });
 
 export default function RequestFormScreen() {
-  const baseUrl = useSelector(
-    (state) => state.config?.baseUrl || "http://localhost:3000"
-  );
-  const token = useSelector(
-    (state) => state.auth?.accessToken || state.auth?.token
-  );
+  const baseUrl = useSelector((state) => state.config?.baseUrl || "http://localhost:3000");
+  const token = useSelector((state) => state.auth?.accessToken || state.auth?.token);
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -344,7 +362,6 @@ export default function RequestFormScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        // Important: refreshControl không làm remount input, chỉ refresh list
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -358,9 +375,7 @@ export default function RequestFormScreen() {
           <Text variant="headlineSmall" style={styles.title}>
             Gửi yêu cầu
           </Text>
-          <Text style={styles.subtitle}>
-            Điền thông tin và gửi yêu cầu lên hệ thống.
-          </Text>
+          <Text style={styles.subtitle}>Điền thông tin và gửi yêu cầu lên hệ thống.</Text>
         </View>
 
         <CreateFormCard
@@ -413,9 +428,7 @@ export default function RequestFormScreen() {
 
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Tiêu đề</Text>
-                  <Text style={styles.detailValue}>
-                    {selected.title || "(Không có tiêu đề)"}
-                  </Text>
+                  <Text style={styles.detailValue}>{selected.title || "(Không có tiêu đề)"}</Text>
                 </View>
 
                 <View style={[styles.detailRow, { alignItems: "center" }]}>
@@ -427,9 +440,7 @@ export default function RequestFormScreen() {
 
                 <View style={{ marginTop: 10 }}>
                   <Text style={styles.detailLabel}>Nội dung</Text>
-                  <Text style={styles.detailContent}>
-                    {selected.content || "(Không có nội dung)"}
-                  </Text>
+                  <Text style={styles.detailContent}>{selected.content || "(Không có nội dung)"}</Text>
                 </View>
               </ScrollView>
             )}
@@ -519,7 +530,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    maxWidth: 170,
+    maxWidth: 200,
   },
   pillDot: { width: 8, height: 8, borderRadius: 8, marginRight: 8 },
   pillText: { fontSize: 12, fontWeight: "800" },

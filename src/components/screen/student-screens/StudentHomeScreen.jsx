@@ -322,7 +322,8 @@ const StudentHomeScreen = () => {
                 >
                   <TouchableOpacity 
                     style={styles.courseCard} 
-                    onPress={() => console.log("Detail:", course.id)}
+                    // onPress={() => console.log("Detail:", course.id)}
+                    onPress={() => navigation.navigate("CourseDetail", { courseId: course.id })}
                   >
                     {/* Hình ảnh (Size 300x200 qua style) */}
                     <Image 
