@@ -4,6 +4,7 @@ import { List, Avatar, Divider, Text } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import MainLayout from "../layout/MainLayout";
 import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../../redux/slices/AuthSlice";
 
 const UserOptionScreen = () => {
   const navigation = useNavigation();
