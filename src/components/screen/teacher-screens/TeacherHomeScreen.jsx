@@ -10,125 +10,114 @@ import {
   RefreshControl,
 } from "react-native";
 import { Card } from "react-native-paper";
-import { Calendar } from "react-native-calendars";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useNavigation } from "@react-navigation/native";
 import moment from "moment";
+import "moment/locale/vi";
 
-// 1. Import Hook Redux
 import { useSelector } from "react-redux";
-
 import MainLayout from "../../layout/MainLayout";
 import api from "../../../api/APIClient";
+
+moment.locale("vi");
 
 const TeacherHomeScreen = () => {
   const navigation = useNavigation();
   const today = moment().format("YYYY-MM-DD");
-  const { defaultAddress } = useSelector((state) => state.dataConfig);
-  // 2. LẤY DATA TỪ REDUX STORE
-  const { user } = useSelector((state) => state.auth);
 
-  // 👇 LẤY URL TỪ CONFIG SLICE (Đảm bảo slice tên là 'config' trong rootReducer)
-  // Fallback về localhost nếu chưa load được config
+  const { user } = useSelector((state) => state.auth);
+  const { defaultAddress } = useSelector((state) => state.dataConfig);
   const baseUrl = useSelector(
     (state) => state.config?.baseUrl || "http://localhost:3000"
   );
 
   const teacherId = user?.id;
 
-  // State UI
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [scheduleData, setScheduleData] = useState({});
+  // State dữ liệu
+  const [todaySchedule, setTodaySchedule] = useState([]);
+  const [upcomingSchedule, setUpcomingSchedule] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // --- 1. HÀM LẤY LỊCH HỌC ---
+  // --- 1. HÀM LẤY LỊCH DẠY ---
   const fetchSchedule = async () => {
     if (!teacherId) return;
-    
     try {
-      const fromDate = moment().startOf('month').format('YYYY-MM-DD');
-      const toDate = moment().add(1, 'year').endOf('month').format('YYYY-MM-DD');
-      
-      // ✅ CÁCH MỚI: Gọi đúng endpoint /courses/teacher-schedule
-      const response = await api.get(`/courses/teacher-schedule?teacherId=${teacherId}&fromDate=${fromDate}&toDate=${toDate}`);
+      // Lấy lịch trong khoảng 1 tháng tới để lọc
+      const fromDate = moment().format("YYYY-MM-DD");
+      const toDate = moment().add(1, "month").format("YYYY-MM-DD");
 
-      let rawList = [];
-      if (Array.isArray(response.data)) {
-        rawList = response.data;
-      } else if (response.data?.data && Array.isArray(response.data.data)) {
-        rawList = response.data.data;
-      }
+      const response = await api.get(
+        `/courses/teacher-schedule?teacherId=${teacherId}&fromDate=${fromDate}&toDate=${toDate}`
+      );
 
-      if (rawList.length > 0) {
-        const formattedSchedule = {};
+      const rawList = response.data?.data || response.data || [];
+
+      if (Array.isArray(rawList)) {
+        const listToday = [];
+        const listUpcoming = [];
+
         rawList.forEach((item) => {
-          const dateKey = moment(item.date).format("YYYY-MM-DD");
-          if (!formattedSchedule[dateKey]) {
-            formattedSchedule[dateKey] = [];
-          }
-          formattedSchedule[dateKey].push({
-            id: item.id || Math.random().toString(),
-            name: item.className,
-            time:
-              item.startTime && item.endTime
-                ? `${moment(item.startTime).format("HH:mm")} - ${moment(
-                    item.endTime
-                  ).format("HH:mm")}`
-                : "Chưa cập nhật",
-            address: defaultAddress,
-            teacher: item.teacherName || "Giảng viên",
-            status: item.myAttendanceStatus,
-          });
-        });
-        setScheduleData(formattedSchedule);
+          const itemDate = moment(item.date).format("YYYY-MM-DD");
 
-        // Tự động chọn ngày đầu tiên có lịch nếu hôm nay không có
-        const listDates = Object.keys(formattedSchedule).sort();
-        if (listDates.length > 0 && !formattedSchedule[today]) {
-          setSelectedDate(listDates[0]);
-        }
+          const scheduleItem = {
+            id: item.id,
+            name: item.className,
+            courseName: item.courseName,
+            time:
+              item.timeString ||
+              `${moment(item.startTime).format("HH:mm")} - ${moment(
+                item.endTime
+              ).format("HH:mm")}`,
+            address: item.address || defaultAddress,
+            isAttendanceOpen: item.isAttendanceOpen,
+            status: item.sessionStatus,
+            date: item.date,
+          };
+
+          if (itemDate === today) {
+            listToday.push(scheduleItem);
+          } else if (moment(itemDate).isAfter(today)) {
+            listUpcoming.push(scheduleItem);
+          }
+        });
+
+        // Sắp xếp lịch sắp tới theo thời gian gần nhất
+        listUpcoming.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        setTodaySchedule(listToday);
+        setUpcomingSchedule(listUpcoming);
       }
     } catch (error) {
       console.error("❌ Lỗi lấy lịch học:", error);
     }
   };
 
-  // --- 2. HÀM LẤY KHÓA HỌC ---
   const fetchCourses = async () => {
     try {
       const response = await api.get("/courses");
-      const rawData = response.data.data || response.data;
+      const rawData = response.data?.data || response.data;
 
       if (Array.isArray(rawData)) {
         const formattedCourses = rawData.map((course) => {
-          // --- LOGIC XỬ LÝ ẢNH DỰA TRÊN BASE URL ---
-          let imageUrl = `https://picsum.photos/seed/${course.id}/300/200`; // Ảnh mặc định nếu null
-
+          let imageUrl = `https://picsum.photos/seed/${course.id}/300/200`;
           if (course.coverImage) {
             if (course.coverImage.startsWith("http")) {
-              // Nếu DB đã lưu link tuyệt đối (cloudinary/s3)
               imageUrl = course.coverImage;
             } else {
-              // Nếu DB lưu link tương đối (/public/...) -> Nối với baseUrl từ Redux
-              // Xử lý bỏ dấu / thừa ở cuối baseUrl hoặc đầu coverImage
-              const cleanBaseUrl = baseUrl.replace(/\/$/, "");
-              const cleanPath = course.coverImage.replace(/^\//, "");
-              imageUrl = `${cleanBaseUrl}/${cleanPath}`;
+              imageUrl = `${baseUrl}${course.coverImage}`;
             }
           }
-
           return {
             id: course.id,
             name: course.name,
-            code: course.code, // Mã môn (HRC-CB)
-            duration: course.duration || "Chưa cập nhật", // Thời lượng
+            code: course.code,
+            duration: course.duration || "Chưa cập nhật",
             image: imageUrl,
           };
         });
-
         setCourses(formattedCourses);
       }
     } catch (error) {
@@ -136,51 +125,25 @@ const TeacherHomeScreen = () => {
     }
   };
 
-  // --- 3. LOAD DATA ---
-  // Load lại khi teacherId hoặc baseUrl thay đổi (ví dụ user đổi cấu hình IP)
-  useEffect(() => {
-    if (teacherId && baseUrl) {
-      loadAllData();
-    }
-  }, [teacherId, baseUrl]);
-
   const loadAllData = async () => {
     setLoading(true);
     await Promise.all([fetchSchedule(), fetchCourses()]);
     setLoading(false);
   };
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    if (teacherId) {
-      await Promise.all([fetchSchedule(), fetchCourses()]);
-    }
-    setRefreshing(false);
+  useEffect(() => {
+    if (teacherId) loadAllData();
   }, [teacherId, baseUrl]);
 
-  // --- NAVIGATION & HELPERS ---
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadAllData();
+    setRefreshing(false);
+  }, [teacherId]);
+
   const handleMenuPress = (route) => {
-    try {
-      navigation.navigate(route);
-    } catch (error) {
-      navigation.navigate("Home");
-    }
+    navigation.navigate(route);
   };
-
-  const getMarkedDates = () => {
-    const marks = {};
-    Object.keys(scheduleData).forEach((date) => {
-      marks[date] = { marked: true, dotColor: "#4F46E5" };
-    });
-    marks[selectedDate] = {
-      ...(marks[selectedDate] || {}),
-      selected: true,
-      selectedColor: "#4F46E5",
-    };
-    return marks;
-  };
-
-  const currentSchedule = scheduleData[selectedDate] || [];
 
   const menuItems = [
     {
@@ -207,7 +170,62 @@ const TeacherHomeScreen = () => {
     { id: 4, name: "Forms", icon: "wpforms", color: "#EF4444", route: "Forms" },
   ];
 
-  // --- RENDER UI ---
+  // Component render item lịch dạy
+  const renderScheduleCard = (item, isToday = false) => (
+    <Card
+      key={item.id}
+      style={[styles.card, !isToday && styles.upcomingCard]}
+      onPress={() =>
+        navigation.navigate("SessionDetail", { sessionId: item.id })
+      }
+    >
+      <Card.Content>
+        <View style={styles.row}>
+          <Icon
+            name="users"
+            size={18}
+            color={isToday ? "#4F46E5" : "#6B7280"}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.className}>{item.name}</Text>
+            {!isToday && (
+              <Text style={styles.dateLabel}>
+                {moment(item.date).format("dddd, DD/MM")}
+              </Text>
+            )}
+          </View>
+          {item.isAttendanceOpen && (
+            <View style={styles.badgeActive}>
+              <Text style={styles.badgeText}>LIVE</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.infoRow}>
+          <Icon
+            name="clock-o"
+            size={14}
+            color="#6B7280"
+            style={{ width: 18 }}
+          />
+          <Text style={styles.infoText}>{item.time}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Icon
+            name="map-marker"
+            size={14}
+            color="#6B7280"
+            style={{ width: 18 }}
+          />
+          <Text style={styles.infoText} numberOfLines={1}>
+            {item.address}
+          </Text>
+        </View>
+      </Card.Content>
+    </Card>
+  );
+
   return (
     <MainLayout>
       <ScrollView
@@ -221,91 +239,49 @@ const TeacherHomeScreen = () => {
           <Text style={styles.headerTitle}>
             Chào, {user?.fullname || "Bạn"} 👋
           </Text>
-          <TouchableOpacity onPress={() => console.log("Notification")}>
+          <TouchableOpacity>
             <Icon name="bell" size={24} color="#4F46E5" />
           </TouchableOpacity>
         </View>
 
-        {/* Calendar */}
-        <View style={styles.calendarContainer}>
-          <Calendar
-            current={today}
-            onDayPress={(day) => setSelectedDate(day.dateString)}
-            markedDates={getMarkedDates()}
-            theme={{
-              selectedDayBackgroundColor: "#4F46E5",
-              todayTextColor: "#4F46E5",
-              dotColor: "#4F46E5",
-              arrowColor: "#4F46E5",
-              textDayFontWeight: "500",
-            }}
-          />
-        </View>
-
-        {/* Schedule Detail */}
+        {/* --- LỊCH HÔM NAY --- */}
         <Animated.View
           entering={FadeInDown.duration(500)}
-          style={styles.scheduleSection}
+          style={styles.section}
         >
-          <Text style={styles.sectionTitle}>
-            Lịch học{" "}
-            {selectedDate === today
-              ? "hôm nay"
-              : moment(selectedDate).format("DD/MM/YYYY")}
-          </Text>
-
+          <Text style={styles.sectionTitle}>Lịch dạy hôm nay</Text>
           {loading && !refreshing ? (
-            <ActivityIndicator
-              size="large"
-              color="#4F46E5"
-              style={{ marginTop: 20 }}
-            />
-          ) : currentSchedule.length > 0 ? (
-            currentSchedule.map((item, index) => (
-              <Card key={index} style={styles.card}>
-                <Card.Content>
-                  {/* Tên Lớp & Môn học */}
-                  <View style={styles.row}>
-                    <Icon name="users" size={20} color="#F59E0B" />
-                    <View style={{flex: 1}}> 
-                      <Text style={styles.className}>{item.name}</Text>
-                      {item.courseName && (
-                        <Text style={styles.courseName}>{item.courseName}</Text>
-                      )}
-                    </View>
-                  </View>
-
-                  {/* Thời gian */}
-                  <View style={styles.row}>
-                    <Icon name="clock-o" size={16} color="gray" style={{ width: 20 }} />
-                    <Text style={styles.infoText}>{item.time}</Text>
-                    
-                    {/* Badge trạng thái (Nổi bật) */}
-                    {item.isAttendanceOpen && (
-                      <View style={styles.badgeActive}>
-                        <Text style={styles.badgeText}>Đang điểm danh</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Địa điểm */}
-                  <View style={styles.row}>
-                    <Icon name="map-marker" size={16} color="gray" style={{ width: 20 }} />
-                    <Text style={styles.infoText}>{item.address}</Text>
-                  </View>
-                </Card.Content>
-              </Card>
-            ))
+            <ActivityIndicator size="small" color="#4f46e5" />
+          ) : todaySchedule.length > 0 ? (
+            todaySchedule.map((item) => renderScheduleCard(item, true))
           ) : (
-            <Card style={styles.emptyCard}>
-              <Card.Content>
-                <Text style={styles.emptyText}>Không có lịch dạy</Text>
-              </Card.Content>
-            </Card>
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyText}>
+                Hôm nay Thầy/Cô không có lịch dạy.
+              </Text>
+            </View>
           )}
         </Animated.View>
 
-        {/* Menu Buttons */}
+        {/* --- LỊCH DỰ KIẾN (GẦN NHẤT) --- */}
+        {upcomingSchedule.length > 0 && (
+          <Animated.View
+            entering={FadeInDown.delay(200).duration(500)}
+            style={styles.section}
+          >
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Lịch dạy sắp tới</Text>
+              <TouchableOpacity onPress={() => handleMenuPress("Schedule")}>
+                <Text style={styles.seeAllText}>Xem tất cả</Text>
+              </TouchableOpacity>
+            </View>
+            {upcomingSchedule
+              .slice(0, 3)
+              .map((item) => renderScheduleCard(item, false))}
+          </Animated.View>
+        )}
+
+        {/* Menu Grid */}
         <View style={styles.menuSection}>
           <View style={styles.menuGrid}>
             {menuItems.map((item) => (
@@ -320,7 +296,7 @@ const TeacherHomeScreen = () => {
                     { backgroundColor: item.color },
                   ]}
                 >
-                  <Icon name={item.icon} size={28} color="#fff" />
+                  <Icon name={item.icon} size={24} color="#fff" />
                 </View>
                 <Text style={styles.menuText}>{item.name}</Text>
               </TouchableOpacity>
@@ -328,73 +304,43 @@ const TeacherHomeScreen = () => {
           </View>
         </View>
 
-        {/* --- COURSES SECTION (ĐÃ CẬP NHẬT GIAO DIỆN) --- */}
+        {/* Courses Section */}
         <View style={styles.coursesSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Khóa Học Của Tôi</Text>
-            <TouchableOpacity onPress={() => handleMenuPress("Courses")}>
-              <Text style={styles.seeAllText}>Xem tất cả</Text>
-            </TouchableOpacity>
+            <Text style={styles.sectionTitle}>Khóa Học Quản Lý</Text>
           </View>
-
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {courses.length > 0 ? (
-              courses.map((course, index) => (
-                <Animated.View
-                  key={course.id}
-                  entering={FadeInDown.delay(index * 100).duration(500)}
-                >
-                  <TouchableOpacity
-                    style={styles.courseCard}
-                    onPress={() => console.log("Detail:", course.id)}
-                  >
-                    {/* Hình ảnh (Size 300x200 qua style) */}
-                    <Image
-                      source={{ uri: course.image }}
-                      style={styles.courseImage}
-                      resizeMode="cover"
-                    />
-
-                    <View style={styles.courseContent}>
-                      {/* Tên Khóa Học */}
-                      <Text style={styles.courseName} numberOfLines={2}>
-                        {course.name}
-                      </Text>
-
-                      {/* THAY PROGRESS BAR BẰNG THÔNG TIN KHÁC */}
-                      <View style={styles.courseMeta}>
-                        {/* Badge Mã môn */}
-                        <View style={styles.codeBadge}>
-                          <Text style={styles.codeText}>{course.code}</Text>
-                        </View>
-
-                        {/* Icon + Thời lượng */}
-                        <View style={styles.durationContainer}>
-                          <Icon name="clock-o" size={12} color="#6B7280" />
-                          <Text style={styles.durationText} numberOfLines={1}>
-                            {course.duration}
-                          </Text>
-                        </View>
+            {courses.map((course, index) => {
+              console.log("Rendering course:", course);
+              return (
+                <TouchableOpacity key={course.id} style={styles.courseCard}>
+                  <Image
+                    source={{ uri: `${course.image}` }}
+                    style={styles.courseImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.courseContent}>
+                    <Text style={styles.courseName} numberOfLines={2}>
+                      {course.name}
+                    </Text>
+                    <View style={styles.courseMeta}>
+                      <View style={styles.codeBadge}>
+                        <Text style={styles.codeText}>{course.code}</Text>
                       </View>
+                      <Text style={styles.durationText}>{course.duration}</Text>
                     </View>
-                  </TouchableOpacity>
-                </Animated.View>
-              ))
-            ) : (
-              <Text style={{ marginLeft: 8, color: "#6B7280" }}>
-                {loading ? "Đang tải dữ liệu..." : "Chưa có khóa học nào."}
-              </Text>
-            )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
-
-        <View style={{ height: 20 }} />
+        <View style={{ height: 30 }} />
       </ScrollView>
     </MainLayout>
   );
 };
 
-// --- STYLES ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F9FAFB" },
   header: {
@@ -402,47 +348,64 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
-    paddingTop: 40,
-    backgroundColor: "#fff",
+    paddingTop: 20,
   },
-  headerTitle: { fontSize: 20, fontWeight: "bold", color: "#1F2937" },
-  calendarContainer: {
-    backgroundColor: "#fff",
-    margin: 16,
-    borderRadius: 12,
-    padding: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  headerTitle: { fontSize: 22, fontWeight: "bold", color: "#1F2937" },
+
+  section: { paddingHorizontal: 16, marginTop: 10 },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
   },
-  scheduleSection: { padding: 16 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#1F2937",
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  scheduleCard: { marginBottom: 12, borderRadius: 12, elevation: 2 },
-  scheduleContent: { gap: 8 },
-  timeBadge: {
+  seeAllText: { color: "#4F46E5", fontSize: 14, fontWeight: "600" },
+
+  card: {
+    marginBottom: 12,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: "#4F46E5",
+  },
+  upcomingCard: { borderLeftColor: "#9CA3AF", elevation: 1 },
+  row: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 10 },
+  infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#4F46E5",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignSelf: "flex-start",
-    gap: 6,
+    marginBottom: 4,
+    gap: 8,
   },
-  timeText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  subjectText: { fontSize: 16, fontWeight: "bold", color: "#1F2937" },
-  scheduleInfo: { gap: 6 },
-  infoRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  infoText: { fontSize: 14, color: "#6B7280", flex: 1 },
-  emptyCard: { borderRadius: 12, elevation: 1 },
-  emptyText: { textAlign: "center", color: "#6B7280", fontSize: 14 },
+
+  className: { fontSize: 16, fontWeight: "bold", color: "#111827", flex: 1 },
+  dateLabel: { fontSize: 12, color: "#4F46E5", fontWeight: "600" },
+  infoText: { fontSize: 13, color: "#4B5563" },
+
+  badgeActive: {
+    backgroundColor: "#DEF7EC",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  badgeText: { color: "#03543F", fontSize: 10, fontWeight: "bold" },
+  emptyBox: {
+    padding: 20,
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    borderStyle: "dashed",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+  },
+  emptyText: { color: "#6B7280", fontSize: 14 },
+
   menuSection: { padding: 16 },
   menuGrid: {
     flexDirection: "row",
@@ -451,8 +414,8 @@ const styles = StyleSheet.create({
   },
   menuButton: { width: "23%", alignItems: "center", marginBottom: 16 },
   iconContainer: {
-    width: 64,
-    height: 64,
+    width: 56,
+    height: 56,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
@@ -460,77 +423,38 @@ const styles = StyleSheet.create({
   },
   menuText: { fontSize: 12, color: "#4B5563", textAlign: "center" },
 
-  // --- COURSES SECTION STYLES ---
-  coursesSection: { padding: 16 },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  seeAllText: { color: "#4F46E5", fontSize: 14, fontWeight: "600" },
+  coursesSection: { paddingLeft: 16 },
   courseCard: {
-    width: 280,
+    width: 240,
     marginRight: 16,
     backgroundColor: "#fff",
     borderRadius: 12,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 3,
+    marginBottom: 10,
   },
-  courseImage: {
-    width: "100%",
-    height: 160, // Tỷ lệ giống mock 300x200
-  },
-  courseContent: { padding: 12 },
+  courseImage: { width: "100%", height: 130 },
+  courseContent: { padding: 10 },
   courseName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#1F2937",
-    marginBottom: 8,
-    minHeight: 40, // Đảm bảo chiều cao cố định cho 2 dòng text
+    height: 40,
   },
   courseMeta: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 4,
+    alignItems: "center",
+    marginTop: 8,
   },
   codeBadge: {
     backgroundColor: "#EEF2FF",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#C7D2FE",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
-  codeText: {
-    fontSize: 11,
-    fontWeight: "bold",
-    color: "#4F46E5",
-  },
-  durationContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  durationText: {
-    fontSize: 12,
-    color: "#6B7280",
-    maxWidth: "80%",
-  },
-  card: { marginBottom: 12, backgroundColor: '#fff', borderRadius: 12, elevation: 2 },
-  row: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 12 },
-  
-  className: { fontSize: 16, fontWeight: 'bold', color: '#111827' },
-  courseName: { fontSize: 13, color: '#6B7280', marginTop: 2 },
-  
-  infoText: { fontSize: 14, color: '#374151' },
+  codeText: { fontSize: 10, fontWeight: "bold", color: "#4F46E5" },
+  durationText: { fontSize: 11, color: "#6B7280" },
 });
 
 export default TeacherHomeScreen;

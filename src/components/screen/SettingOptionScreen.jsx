@@ -3,27 +3,9 @@ import { View, ScrollView, TouchableOpacity, Image, Alert } from "react-native";
 import { List, Avatar, Divider, Text } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import MainLayout from "../layout/MainLayout";
-import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../../redux/slices/AuthSlice";
 
 const SettingOptionScreen = () => {
   const navigation = useNavigation();
-  const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  const handleLogout = () => {
-    Alert.alert(
-      "Đăng xuất",
-      "Bạn có chắc chắn muốn đăng xuất không?",
-      [
-        { text: "Hủy", style: "cancel" },
-        { 
-          text: "Đồng ý", 
-          style: "destructive",
-          onPress: () => dispatch(logout()) // Gọi Redux Logout -> App tự chuyển về Login
-        }
-      ]
-    );
-  };
 
   const menuItems = [
     {
