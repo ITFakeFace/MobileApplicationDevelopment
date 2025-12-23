@@ -1,16 +1,18 @@
-import React from 'react';
-import { Alert, View } from 'react-native'; // Thêm Alert
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { BottomNavigation } from 'react-native-paper';
-import { CommonActions } from '@react-navigation/native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useDispatch, useSelector } from 'react-redux'; // Import hook dispatch
+import React from "react";
+import { Alert, View } from "react-native"; // Thêm Alert
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { BottomNavigation } from "react-native-paper";
+import { CommonActions } from "@react-navigation/native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useDispatch, useSelector } from "react-redux"; // Import hook dispatch
 
 // Import Action Logout và HomeScreen
-import StudentHomeScreen from '../screen/student-screens/StudentHomeScreen';
-import { logout } from '../../redux/slices/AuthSlice';
-import UserOptionScreen from '../screen/UserOptionScreen';
-import TeacherHomeScreen from '../screen/teacher-screens/TeacherHomeScreen';
+import StudentHomeScreen from "../screen/student-screens/StudentHomeScreen";
+import { logout } from "../../redux/slices/AuthSlice";
+import UserOptionScreen from "../screen/UserOptionScreen";
+import TeacherHomeScreen from "../screen/teacher-screens/TeacherHomeScreen";
+import StudentScheduleScreen from "../screen/student-screens/StudentScheduleScreen";
+import TeacherScheduleScreen from "../screen/teacher-screens/TeacherScheduleScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -19,7 +21,7 @@ const LogoutPlaceholder = () => <View />;
 
 export default function MainNavigator() {
   const dispatch = useDispatch();
-  const { roles } = useSelector((state)=>state.auth);
+  const { roles } = useSelector((state) => state.auth);
   return (
     <Tab.Navigator
       screenOptions={{ headerShown: false }}
@@ -29,7 +31,7 @@ export default function MainNavigator() {
           safeAreaInsets={insets}
           onTabPress={({ route, preventDefault }) => {
             const event = navigation.emit({
-              type: 'tabPress',
+              type: "tabPress",
               target: route.key,
               canPreventDefault: true,
             });
@@ -59,37 +61,77 @@ export default function MainNavigator() {
     >
       {/* --- TAB 1: HOME --- */}
       {roles.includes("STUDENT") && (
-        <Tab.Screen
-          name="StudentHome"
-          component={StudentHomeScreen}
-          options={{
-            tabBarLabel: 'Học tập',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="school" size={size} color={color} />
-            ),
-          }}
-        />
+        <>
+          <Tab.Screen
+            name="StudentHome"
+            component={StudentHomeScreen}
+            options={{
+              tabBarLabel: "Học tập",
+              tabBarIcon: ({ color, size }) => (
+                <MaterialCommunityIcons
+                  name="school"
+                  size={size}
+                  color={color}
+                />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="StudentSchedule"
+            component={StudentScheduleScreen}
+            options={{
+              tabBarLabel: "Lịch học",
+              tabBarIcon: ({ color, size }) => (
+                <MaterialCommunityIcons
+                  name="calendar"
+                  size={size}
+                  color={color}
+                />
+              ),
+            }}
+          />
+        </>
       )}
 
       {/* CASE 2: NẾU CÓ ROLE TEACHER -> HIỆN TAB GIẢNG DẠY */}
       {/* Nếu user có cả 2 role, cả 2 tab sẽ cùng hiện lên */}
       {roles.includes("TEACHER") && (
-        <Tab.Screen
-          name="TeacherHome"
-          component={TeacherHomeScreen}
-          options={{
-            tabBarLabel: 'Giảng dạy',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="school" size={size} color={color} />
-            ),
-          }}
-        />
+        <>
+          <Tab.Screen
+            name="TeacherHome"
+            component={TeacherHomeScreen}
+            options={{
+              tabBarLabel: "Giảng dạy",
+              tabBarIcon: ({ color, size }) => (
+                <MaterialCommunityIcons
+                  name="school"
+                  size={size}
+                  color={color}
+                />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="TeacherSchedule"
+            component={TeacherScheduleScreen}
+            options={{
+              tabBarLabel: "Lịch dạy",
+              tabBarIcon: ({ color, size }) => (
+                <MaterialCommunityIcons
+                  name="calendar"
+                  size={size}
+                  color={color}
+                />
+              ),
+            }}
+          />
+        </>
       )}
       <Tab.Screen
         name="UserOption"
         component={UserOptionScreen}
         options={{
-          tabBarLabel: 'User',
+          tabBarLabel: "User",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account" size={size} color={color} />
           ),

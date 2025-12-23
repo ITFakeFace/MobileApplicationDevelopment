@@ -16,15 +16,48 @@ import SettingOptionScreen from '../screen/SettingOptionScreen';
 import RequestFormScreen from '../screen/student-screens/RequestFormScreen';
 import ContactUsScreen from '../screen/ContactUsScreen';
 import AboutUsScreen from '../screen/AboutUsScreen';
+import TeacherClassSessionScreen from '../screen/teacher-screens/TeacherClassSessionScreen';
+import StudentClassSessionScreen from '../screen/student-screens/StudentClassSessionScreen';
+import TeacherAttendanceDetailScreen from '../screen/teacher-screens/TeacherAttendanceDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function MainRouter() {
-  const { isLoggedIn } = useSelector((state) => state.auth);
+  const { isLoggedIn, user, roles } = useSelector((state) => state.auth);
 
   // (Optional) Loading khi check token lúc mở app
   const [isChecking, setIsChecking] = useState(false);
+// --- HÀM TÁCH BIỆT: Xử lý logic chọn màn hình ---
+  const renderScreenByRole = () => {
+    // 1. Kiểm tra an toàn: user có tồn tại và roles có phải mảng không?
 
+    if (roles.includes('TEACHER')) 
+      return (
+        <>
+        <Stack.Screen 
+          name="SessionDetail" 
+          component={TeacherClassSessionScreen} 
+          options={{ title: 'Chi tiết lớp học (GV)', headerShown: true }}
+        />
+        <Stack.Screen 
+          name="AttendanceDetail" 
+          component={TeacherAttendanceDetailScreen} 
+          options={{ title: 'Chi tiết điểm danh', headerShown: true }}
+        />
+        </>
+      );
+
+    // Mặc định trả về màn hình Student
+    return (
+      <>
+        <Stack.Screen 
+          name="SessionDetail" 
+          component={StudentClassSessionScreen} 
+          options={{ title: 'Chi tiết lớp học (SV)', headerShown: true }}
+        />
+      </>
+    );
+  };
   if (isChecking) {
     return (
       <View className="flex-1 justify-center items-center">
@@ -66,6 +99,7 @@ export default function MainRouter() {
             component={ContactUsScreen} 
             options={{ headerShown: true, title: 'Thông tin liên lạc' }} 
           />
+          {renderScreenByRole()}
           <Stack.Screen 
             name="AboutUs" 
             component={AboutUsScreen} 
