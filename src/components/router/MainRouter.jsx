@@ -44,6 +44,11 @@ export default function MainRouter() {
             options={{ headerShown: true, title: 'Hồ sơ cá nhân' }} 
           />
           <Stack.Screen 
+            name="EditProfile" 
+            component={EditProfileScreen} 
+            options={{ headerShown: true, title: 'Hồ sơ cá nhân' }} 
+          />
+          <Stack.Screen 
             name="SettingOptionScreen" 
             component={SettingOptionScreen} 
             options={{ headerShown: true, title: 'Cài đặt' }} 
