@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux'; // Import hook dispatch
 import StudentHomeScreen from '../screen/student-screens/StudentHomeScreen';
 import { logout } from '../../redux/slices/AuthSlice';
 import UserOptionScreen from '../screen/UserOptionScreen';
+import TeacherHomeScreen from '../screen/teacher-screens/TeacherHomeScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -79,7 +80,7 @@ export default function MainNavigator() {
           options={{
             tabBarLabel: 'Giảng dạy',
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="teach" size={size} color={color} />
+              <MaterialCommunityIcons name="school" size={size} color={color} />
             ),
           }}
         />
