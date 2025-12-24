@@ -22,7 +22,7 @@ export default function CourseDetailScreen() {
   const { courseId } = route.params || {};
 
   const baseUrl = useSelector(
-    (state) => state.config?.baseUrl || "http://localhost:3000"
+    (state) => state.config?.baseUrl || "https://madserver-production.up.railway.app"
   );
 
   const [loading, setLoading] = useState(true);
@@ -39,10 +39,7 @@ export default function CourseDetailScreen() {
         return coverImage;
       }
 
-      // coverImage dạng "/public/..." -> nối baseUrl
-      const cleanBaseUrl = (baseUrl || "").replace(/\/$/, "");
-      const cleanPath = String(coverImage).replace(/^\//, "");
-      return `${cleanBaseUrl}/${cleanPath}`;
+      return `${baseUrl}${coverImage}`;
     },
     [baseUrl, courseId]
   );

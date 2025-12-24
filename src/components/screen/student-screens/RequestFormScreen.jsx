@@ -206,7 +206,7 @@ const ListCard = React.memo(function ListCard({
 });
 
 export default function RequestFormScreen() {
-  const baseUrl = useSelector((state) => state.config?.baseUrl || "http://localhost:3000");
+  const baseUrl = useSelector((state) => state.config?.baseUrl || "https://madserver-production.up.railway.app");
   const token = useSelector((state) => state.auth?.accessToken || state.auth?.token);
 
   const [title, setTitle] = useState("");

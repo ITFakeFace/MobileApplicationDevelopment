@@ -236,12 +236,12 @@ export default function LoginScreen({ navigation }) {
               </Animated.View>
 
               {/* Sign Up Link */}
-              <View className="flex-row justify-center mt-6">
+              {/* <View className="flex-row justify-center mt-6">
                 <Text className="text-gray-600">Chưa có tài khoản? </Text>
                 <TouchableOpacity>
                   <Text className="text-indigo-600 font-semibold">Đăng ký</Text>
                 </TouchableOpacity>
-              </View>
+              </View> */}
             </View>
           </Animated.View>
         </View>

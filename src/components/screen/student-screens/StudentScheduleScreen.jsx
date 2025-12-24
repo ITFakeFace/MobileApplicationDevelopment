@@ -209,7 +209,7 @@ const StudentScheduleScreen = () => {
                 item={item}
                 getClassColor={getClassColor}
                 formatTime={formatTime}
-                onPress={() => handleSessionPress(item.sessionId)} // GẮN ONPRESS
+                onPress={() => handleSessionPress(item.id)} // GẮN ONPRESS
               />
             </Animated.View>
           );

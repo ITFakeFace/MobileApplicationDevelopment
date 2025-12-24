@@ -30,7 +30,7 @@ const StudentHomeScreen = () => {
   const { defaultAddress } = useSelector((state) => state.dataConfig);
   const { user } = useSelector((state) => state.auth);
   const baseUrl = useSelector(
-    (state) => state.config?.baseUrl || "http://localhost:3000"
+    (state) => state.config?.baseUrl || "https://madserver-production.up.railway.app"
   );
   const studentId = user?.id;
 
@@ -177,21 +177,21 @@ const StudentHomeScreen = () => {
       color: "#4F46E5",
       route: "StudentSchedule",
     },
+    // {
+    //   id: 2,
+    //   name: "Điểm Danh",
+    //   icon: "check-circle",
+    //   color: "#10B981",
+    //   route: "Attendance",
+    // },
     {
       id: 2,
-      name: "Điểm Danh",
-      icon: "check-circle",
-      color: "#10B981",
-      route: "Attendance",
-    },
-    {
-      id: 3,
       name: "Profile",
       icon: "user",
       color: "#F59E0B",
       route: "Profile",
     },
-    { id: 4, name: "Forms", icon: "wpforms", color: "#EF4444", route: "Forms" },
+    { id: 3, name: "Forms", icon: "wpforms", color: "#EF4444", route: "RequestForm" },
   ];
 
   const handleMenuPress = (route) => {

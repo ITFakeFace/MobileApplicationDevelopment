@@ -19,7 +19,7 @@ const UserOptionScreen = () => {
 
   const { user, roles } = useSelector((state) => state.auth);
   const baseUrl = useSelector(
-    (state) => state.config?.baseUrl || "http://localhost:3000"
+    (state) => state.config?.baseUrl || "https://madserver-production.up.railway.app"
   );
 
   const isStudent = Array.isArray(roles) && roles.includes("STUDENT");
@@ -68,12 +68,12 @@ const UserOptionScreen = () => {
       tone: "amber",
       onPress: () => navigation.navigate("SettingOption"),
     },
-    {
-      title: "Trợ giúp",
-      icon: "lifebuoy",
-      tone: "pink",
-      onPress: () => navigation.navigate("Help"),
-    },
+    // {
+    //   title: "Trợ giúp",
+    //   icon: "lifebuoy",
+    //   tone: "pink",
+    //   onPress: () => navigation.navigate("Help"),
+    // },
   ];
 
   const toneStyles = (tone) => {
@@ -168,7 +168,7 @@ const UserOptionScreen = () => {
       />
     </TouchableOpacity>
   );
-
+  console.log(`${baseUrl}${user.avatar}`)
   const userAvatarUri =
     user?.avatar ? { uri: `${baseUrl}${user.avatar}` } : null;
 

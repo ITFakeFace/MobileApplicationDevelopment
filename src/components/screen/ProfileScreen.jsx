@@ -50,7 +50,7 @@ const InfoRow = ({ icon, label, value }) => {
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const { user } = useSelector((state) => state.auth);
-  const baseUrl = useSelector((state) => state.config?.baseUrl || "http://localhost:3000"); 
+  const baseUrl = useSelector((state) => state.config?.baseUrl || "https://madserver-production.up.railway.app"); 
 
   const initials = useMemo(() => {
     const name = user?.fullname || user?.username || "";

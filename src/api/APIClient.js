@@ -12,7 +12,7 @@ export const injectStore = (_store) => {
 
 // 1. Tạo instance (Lúc này baseURL chỉ là tạm thời)
 const APIClient = axios.create({
-  baseURL: 'http://localhost:3000', // Giá trị tạm, sẽ bị ghi đè ngay lập tức
+  baseURL: 'https://madserver-production.up.railway.app', // Giá trị tạm, sẽ bị ghi đè ngay lập tức
   headers: {
     'Content-Type': 'application/json',
   },

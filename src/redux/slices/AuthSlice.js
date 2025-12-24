@@ -7,7 +7,7 @@ export const loginUser = createAsyncThunk(
   async (loginData, { rejectWithValue }) => {
     try {
       const response = await api.post("/auth/login", loginData);
-
+      console.log(JSON.stringify(response));
       if (!response.status) {
         return rejectWithValue(response.message || "Đăng nhập thất bại");
       }

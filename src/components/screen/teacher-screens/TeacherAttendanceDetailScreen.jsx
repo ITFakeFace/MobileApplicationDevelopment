@@ -51,7 +51,7 @@ const TeacherAttendanceDetailScreen = () => {
   const [editNote, setEditNote] = useState("");
   const [updating, setUpdating] = useState(false);
   const baseUrl = useSelector(
-    (state) => state.dataConfig?.baseUrl || "http://localhost:3000"
+    (state) => state.dataConfig?.baseUrl || "https://madserver-production.up.railway.app"
   );
   // --- 1. LẤY DỮ LIỆU DANH SÁCH (ĐÃ SỬA API) ---
   const fetchAttendanceList = async () => {

@@ -29,7 +29,7 @@ const TeacherHomeScreen = () => {
   const { user } = useSelector((state) => state.auth);
   const { defaultAddress } = useSelector((state) => state.dataConfig);
   const baseUrl = useSelector(
-    (state) => state.config?.baseUrl || "http://localhost:3000"
+    (state) => state.config?.baseUrl || "https://madserver-production.up.railway.app"
   );
 
   const teacherId = user?.id;
@@ -151,15 +151,15 @@ const TeacherHomeScreen = () => {
       name: "Thời Khóa Biểu",
       icon: "calendar",
       color: "#4F46E5",
-      route: "Schedule",
+      route: "TeacherSchedule",
     },
-    {
-      id: 2,
-      name: "Điểm Danh",
-      icon: "check-circle",
-      color: "#10B981",
-      route: "Attendance",
-    },
+    // {
+    //   id: 2,
+    //   name: "Điểm Danh",
+    //   icon: "check-circle",
+    //   color: "#10B981",
+    //   route: "Attendance",
+    // },
     {
       id: 3,
       name: "Profile",
@@ -167,7 +167,6 @@ const TeacherHomeScreen = () => {
       color: "#F59E0B",
       route: "Profile",
     },
-    { id: 4, name: "Forms", icon: "wpforms", color: "#EF4444", route: "Forms" },
   ];
 
   // Component render item lịch dạy
@@ -410,7 +409,7 @@ const styles = StyleSheet.create({
   menuGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
   },
   menuButton: { width: "23%", alignItems: "center", marginBottom: 16 },
   iconContainer: {
